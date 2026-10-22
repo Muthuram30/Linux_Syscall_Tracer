@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux System Call Tracer & Process Monitor</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-terminal"></i>
+                    <h1>Linux System Call Tracer & Process Monitor</h1>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="nav-menu">
+                    <a href="#overview" class="nav-item active" data-section="overview">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#processes" class="nav-item" data-section="processes">
+                        <i class="fas fa-microchip"></i>
+                        <span>Processes</span>
+                    </a>
+                    <a href="#syscalls" class="nav-item" data-section="syscalls">
+                        <i class="fas fa-code"></i>
+                        <span>System Calls</span>
+                    </a>
+                    <a href="#memory" class="nav-item" data-section="memory">
+                        <i class="fas fa-memory"></i>
+                        <span>Memory</span>
+                    </a>
+                    <a href="#statistics" class="nav-item" data-section="statistics">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Statistics</span>
+                    </a>
+                    <a href="#logs" class="nav-item" data-section="logs">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Logs</span>
+                    </a>
+                    <a href="#about" class="nav-item" data-section="about">
+                        <i class="fas fa-info-circle"></i>
+                        <span>About</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Overview Section -->
+                <section id="overview" class="section active">
+                    <h2 class="section-title">System Overview</h2>
+                    
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon cpu">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">CPU Usage</div>
+                                <div class="stat-value" id="cpuUsage">0.0%</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon memory">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Memory Usage</div>
+                                <div class="stat-value" id="memUsage">0.0%</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon process">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">Active Processes</div>
+                                <div class="stat-value" id="activeProcesses">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon syscall">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-label">System Calls/sec</div>
+                                <div class="stat-value" id="syscallRate">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Process Info -->
+                    <div class="card">
+                        <h3 class="card-title">Current Process</h3>
+                        <div class="process-info" id="processInfo">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">PID:</span>
+                                    <span class="info-value" id="procPid">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Name:</span>
+                                    <span class="info-value" id="procName">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">State:</span>
+                                    <span class="info-value" id="procState">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">CPU:</span>
+                                    <span class="info-value" id="procCpu">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Memory:</span>
+                                    <span class="info-value" id="procMem">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Threads:</span>
+                                    <span class="info-value" id="procThreads">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Parent PID:</span>
+                                    <span class="info-value" id="procPpid">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Command:</span>
+                                    <span class="info-value" id="procCmd">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Call Stream -->
+                    <div class="card">
+                        <h3 class="card-title">Recent System Calls</h3>
+                        <div class="syscall-stream">
+                            <table class="data-table" id="syscallTable">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>PID</th>
+                                        <th>System Call</th>
+                                        <th>Number</th>
+                                        <th>Return Value</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="syscallTableBody">
+                                    <tr>
+                                        <td colspan="6" class="no-data">No system calls yet. Start tracing a program...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- System Call Frequency Chart -->
+                    <div class="card">
+                        <h3 class="card-title">System Call Frequency</h3>
+                        <canvas id="frequencyChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Processes Section -->
+                <section id="processes" class="section">
+                    <h2 class="section-title">Process Tree</h2>
+                    <div class="card">
+                        <div id="processTree" class="process-tree">
+                            <div class="no-data">No process data available</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- System Calls Section -->
+                <section id="syscalls" class="section">
+                    <h2 class="section-title">System Call Details</h2>
+                    <div class="card">
+                        <h3 class="card-title">System Call Categories</h3>
+                        <div class="category-grid">
+                            <div class="category-card file">
+                                <div class="category-icon"><i class="fas fa-file"></i></div>
+                                <div class="category-name">File Operations</div>
+                                <div class="category-count" id="catFile">0</div>
+                            </div>
+                            <div class="category-card process">
+                                <div class="category-icon"><i class="fas fa-cogs"></i></div>
+                                <div class="category-name">Process Control</div>
+                                <div class="category-count" id="catProcess">0</div>
+                            </div>
+                            <div class="category-card memory">
+                                <div class="category-icon"><i class="fas fa-memory"></i></div>
+                                <div class="category-name">Memory Management</div>
+                                <div class="category-count" id="catMemory">0</div>
+                            </div>
+                            <div class="category-card io">
+                                <div class="category-icon"><i class="fas fa-exchange-alt"></i></div>
+                                <div class="category-name">I/O Operations</div>
+                                <div class="category-count" id="catIo">0</div>
+                            </div>
+                            <div class="category-card other">
+                                <div class="category-icon"><i class="fas fa-ellipsis-h"></i></div>
+                                <div class="category-name">Other</div>
+                                <div class="category-count" id="catOther">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">System Call Execution Flow</h3>
+                        <div class="flow-diagram">
+                            <div class="flow-step">
+                                <div class="flow-box userspace">User Program</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box library">System Call</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box interface">System Call Interface</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box kernel">Kernel</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box hardware">Hardware / Resource</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box result">Return Value</div>
+                                <div class="flow-arrow">↓</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-box userspace">User Program</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Memory Section -->
+                <section id="memory" class="section">
+                    <h2 class="section-title">Memory Usage</h2>
+                    <div class="card">
+                        <h3 class="card-title">Resource Usage Over Time</h3>
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Statistics Section -->
+                <section id="statistics" class="section">
+                    <h2 class="section-title">Statistics</h2>
+                    <div class="stats-overview">
+                        <div class="stat-box">
+                            <div class="stat-box-label">Total System Calls</div>
+                            <div class="stat-box-value" id="statTotal">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-label">Unique System Calls</div>
+                            <div class="stat-box-value" id="statUnique">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-label">Most Frequent</div>
+                            <div class="stat-box-value" id="statTop">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-label">Architecture</div>
+                            <div class="stat-box-value" id="statArch">-</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Top System Calls</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>System Call</th>
+                                    <th>Number</th>
+                                    <th>Count</th>
+                                    <th>Category</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topSyscallsBody">
+                                <tr>
+                                    <td colspan="5" class="no-data">No data available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Logs Section -->
+                <section id="logs" class="section">
+                    <h2 class="section-title">Trace Logs</h2>
+                    <div class="card">
+                        <h3 class="card-title">Log Information</h3>
+                        <div class="log-info">
+                            <p><strong>Log File:</strong> <span id="logFile">-</span></p>
+                            <p><strong>Command:</strong> <span id="logCommand">-</span></p>
+                            <p><strong>Started:</strong> <span id="logStarted">-</span></p>
+                            <p><strong>Status:</strong> <span id="logStatus">-</span></p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title">Milestone Events</h3>
+                        <div class="milestones" id="milestones">
+                            <div class="no-data">No milestone events yet</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- About Section -->
+                <section id="about" class="section">
+                    <h2 class="section-title">About This Project</h2>
+                    <div class="card">
+                        <h3 class="card-title">Linux System Call Tracer & Process Monitor</h3>
+                        <div class="about-content">
+                            <p>An educational operating systems project that demonstrates:</p>
+                            <ul>
+                                <li><strong>System Call Tracing:</strong> Using ptrace() to intercept and analyze system calls</li>
+                                <li><strong>Process Monitoring:</strong> Reading /proc filesystem for process information</li>
+                                <li><strong>User/Kernel Mode:</strong> Understanding the boundary between userspace and kernel</li>
+                                <li><strong>Process Lifecycle:</strong> fork(), exec(), wait(), exit()</li>
+                                <li><strong>Memory Management:</strong> mmap(), brk(), memory allocation</li>
+                                <li><strong>File I/O:</strong> open(), read(), write(), close()</li>
+                            </ul>
+
+                            <h4>Key OS Concepts</h4>
+                            <ul>
+                                <li>System calls are the interface between user programs and the kernel</li>
+                                <li>ptrace() allows one process to observe and control another</li>
+                                <li>/proc is a virtual filesystem exposing kernel data structures</li>
+                                <li>Processes transition between user mode and kernel mode during syscalls</li>
+                                <li>Context switching occurs when the kernel handles system calls</li>
+                            </ul>
+
+                            <h4>Technology Stack</h4>
+                            <ul>
+                                <li><strong>Backend:</strong> C (ptrace, /proc, process management)</li>
+                                <li><strong>Dashboard:</strong> Python Flask + HTML/CSS/JavaScript</li>
+                                <li><strong>OS:</strong> Linux (Ubuntu)</li>
+                                <li><strong>Build:</strong> GCC, Make</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
